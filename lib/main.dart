@@ -41,7 +41,18 @@ class _BouncingBallGameState extends State<BouncingBallGame> {
   @override
   void initState() {
     super.initState();
-    trailRadius = ballRadius; // ballRadius 값을 trailRadius로 지정
+    trailRadius = ballRadius * 0.8; // ballRadius 값을 trailRadius로 지정
+
+    // 공의 초기 위치를 화면 중앙에 배치
+    WidgetsBinding.instance!.addPostFrameCallback((_) {
+      screenWidth = MediaQuery.of(context).size.width;
+      screenHeight = MediaQuery.of(context).size.height;
+      setState(() {
+        ballPositionX = screenWidth / 2;
+        ballPositionY = screenHeight / 2;
+      });
+    });
+
     startTimer();
   }
 
