@@ -28,23 +28,33 @@ class _BouncingBallGameState extends State<BouncingBallGame> {
   double ballRadius = 10;
   double screenWidth = 0;
   double screenHeight = 0;
-  double trailRadius = 0; // 흔적의 반지름
+  double trailRadius = 0;
 
-  double dx = 0; // 공의 X축 이동 속도
-  double dy = 0; // 공의 Y축 이동 속도
+  double dx = 0;
+  double dy = 0;
 
-  double maxSpeed = 35; // 최대 속도
+  double maxSpeed = 30;
   double minSpeed = 1;
 
-  List<Offset> trailPositions = []; // 흔적 위치들
+  double bounceSpeed = 0.8;
+  double minBounceSpeed = 0.1;
+  double maxBounceSpeed = 2.0;
+
+  List<Offset> trailPositions = [];
+
+  bool isDragging = false;
+  Offset dragStartOffset = Offset.zero;
+  double dragDistance = 0;
+
+  double maxSpeedSliderValue = 1;
+  double bounceSpeedSliderValue = 0.1;
 
   @override
   void initState() {
     super.initState();
-    trailRadius = ballRadius * 0.8; // ballRadius 값을 trailRadius로 지정
+    trailRadius = ballRadius * 0.8;
 
-    // 공의 초기 위치를 화면 중앙에 배치
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       screenWidth = MediaQuery.of(context).size.width;
       screenHeight = MediaQuery.of(context).size.height;
       setState(() {
@@ -58,69 +68,130 @@ class _BouncingBallGameState extends State<BouncingBallGame> {
 
   void startTimer() {
     Timer.periodic(Duration(milliseconds: 16), (timer) {
-      setState(() {
-        // 공의 위치를 업데이트하고 경계 체크
-        ballPositionX += dx;
-        ballPositionY += dy;
+      if (!isDragging) {
+        setState(() {
+          ballPositionX += dx;
+          ballPositionY += dy;
 
-        if (ballPositionX + ballRadius > screenWidth) {
-          ballPositionX = screenWidth - ballRadius; // 가장자리에서 멈추지 않고 반대 방향으로 이동
-          dx = -dx * 0.8;
-        } else if (ballPositionX - ballRadius < 0) {
-          ballPositionX = ballRadius; // 가장자리에서 멈추지 않고 반대 방향으로 이동
-          dx = -dx * 0.8;
-        }
+          if (ballPositionX + ballRadius > screenWidth) {
+            ballPositionX = screenWidth - ballRadius;
+            dx = -dx * bounceSpeed;
+          } else if (ballPositionX - ballRadius < 0) {
+            ballPositionX = ballRadius;
+            dx = -dx * bounceSpeed;
+          }
 
-        if (ballPositionY + ballRadius > screenHeight) {
-          ballPositionY = screenHeight - ballRadius; // 가장자리에서 멈추지 않고 반대 방향으로 이동
-          dy = -dy * 0.8;
-        } else if (ballPositionY - ballRadius < 0) {
-          ballPositionY = ballRadius; // 가장자리에서 멈추지 않고 반대 방향으로 이동
-          dy = -dy * 0.8;
-        }
+          if (ballPositionY + ballRadius > screenHeight) {
+            ballPositionY = screenHeight - ballRadius;
+            dy = -dy * bounceSpeed;
+          } else if (ballPositionY - ballRadius < 0) {
+            ballPositionY = ballRadius;
+            dy = -dy * bounceSpeed;
+          }
 
-        // 최대 속도 제한
-        if (dx.abs() > maxSpeed) {
-          dx = dx.sign * maxSpeed;
-        }
+          if (dx.abs() > maxSpeed) {
+            dx = dx.sign * maxSpeed;
+          }
 
-        if (dy.abs() > maxSpeed) {
-          dy = dy.sign * maxSpeed;
-        }
+          if (dy.abs() > maxSpeed) {
+            dy = dy.sign * maxSpeed;
+          }
 
-        if (dx.abs() < minSpeed) {
-          dx = dx.sign * minSpeed;
-        }
+          if (dx.abs() < minSpeed) {
+            dx = dx.sign * minSpeed;
+          }
 
-        if (dy.abs() < minSpeed) {
-          dy = dy.sign * minSpeed;
-        }
+          if (dy.abs() < minSpeed) {
+            dy = dy.sign * minSpeed;
+          }
 
-        // 흔적 위치 업데이트
-        trailPositions.add(Offset(ballPositionX, ballPositionY));
+          trailPositions.add(Offset(ballPositionX, ballPositionY));
 
-        // 흔적 위치 제한
-        if (trailPositions.length > 20) {
-          trailPositions.removeAt(0);
-        }
-      });
+          if (trailPositions.length > 20) {
+            trailPositions.removeAt(0);
+          }
+        });
+      }
     });
   }
 
   void updateBallSpeedOnDrag(DragUpdateDetails details) {
     setState(() {
-      // 드래그 방향과 반대 방향으로 속도 설정
-      dx = -details.delta.dx;
-      dy = -details.delta.dy;
+      dx = details.delta.dx;
+      dy = details.delta.dy;
 
-      // 최대 속도 제한
-      double speed = sqrt(dx * dx + dy * dy);
-      if (speed > maxSpeed) {
-        double scaleFactor = maxSpeed / speed;
-        dx *= scaleFactor;
-        dy *= scaleFactor;
-      }
+      double scaleFactor = min(dragDistance / 100, 1.0);
+      dx *= -scaleFactor;
+      dy *= -scaleFactor;
     });
+  }
+
+  void onPanStart(DragStartDetails details) {
+    setState(() {
+      dx = 0;
+      dy = 0;
+      dragStartOffset = details.localPosition;
+      isDragging = true;
+    });
+  }
+
+  void onPanEnd(DragEndDetails details) {
+    setState(() {
+      isDragging = false;
+      dragDistance = 0;
+    });
+  }
+
+  void showOptionsDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
+              title: Text('Options'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('Max Speed: ${maxSpeed.toStringAsFixed(1)}'),
+                  Slider(
+                    value: maxSpeedSliderValue,
+                    min: 1,
+                    max: 40,
+                    onChanged: (value) {
+                      setState(() {
+                        maxSpeedSliderValue = value;
+                        maxSpeed = value;
+                      });
+                    },
+                  ),
+                  Text('Bounce Speed: ${bounceSpeed.toStringAsFixed(1)}'),
+                  Slider(
+                    value: bounceSpeedSliderValue,
+                    min: 0.1,
+                    max: 2.0,
+                    onChanged: (value) {
+                      setState(() {
+                        bounceSpeedSliderValue = value;
+                        bounceSpeed = value;
+                      });
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  child: Text('Close'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -129,17 +200,30 @@ class _BouncingBallGameState extends State<BouncingBallGame> {
     screenHeight = MediaQuery.of(context).size.height;
 
     return GestureDetector(
-      onPanUpdate: updateBallSpeedOnDrag,
+      onPanStart: onPanStart,
+      onPanUpdate: (details) {
+        updateBallSpeedOnDrag(details);
+        dragDistance = (details.localPosition - dragStartOffset).distance;
+      },
+      onPanEnd: onPanEnd,
       child: Scaffold(
         appBar: AppBar(
           title: Text('Bouncing Ball Game'),
+          actions: [
+            IconButton(
+              icon: Icon(Icons.settings),
+              onPressed: () {
+                showOptionsDialog(context);
+              },
+            ),
+          ],
         ),
         body: CustomPaint(
           painter: BallPainter(
             ballPositionX: ballPositionX,
             ballPositionY: ballPositionY,
             ballRadius: ballRadius,
-            trailPositions: trailPositions,
+            trailPositions: trailPositions.reversed.toList(),
             trailRadius: trailRadius,
           ),
         ),
@@ -168,11 +252,11 @@ class BallPainter extends CustomPainter {
     final ballPaint = Paint()..color = Colors.blue;
     final trailPaint = Paint()..color = Colors.grey;
 
-    // 공 그리기
     canvas.drawCircle(Offset(ballPositionX, ballPositionY), ballRadius, ballPaint);
 
-    // 흔적 그리기
     for (var i = 0; i < trailPositions.length; i++) {
+      double opacity = 1.0 - (i / trailPositions.length);
+      trailPaint.color = trailPaint.color.withOpacity(opacity);
       canvas.drawCircle(trailPositions[i], trailRadius, trailPaint);
     }
   }
