@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
-import 'dart:async';
 import 'dart:math';
+import 'dart:ui';
+import 'ball_painter.dart';
 
-void main() => runApp(BouncingBallApp());
+
+void main() {
+  runApp(BouncingBallApp());
+}
 
 class BouncingBallApp extends StatelessWidget {
   @override
@@ -22,7 +26,10 @@ class BouncingBallGame extends StatefulWidget {
   _BouncingBallGameState createState() => _BouncingBallGameState();
 }
 
-class _BouncingBallGameState extends State<BouncingBallGame> {
+class _BouncingBallGameState extends State<BouncingBallGame> with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _animation;
+
   double ballPositionX = 10;
   double ballPositionY = 10;
   double ballRadius = 10;
@@ -52,9 +59,21 @@ class _BouncingBallGameState extends State<BouncingBallGame> {
   @override
   void initState() {
     super.initState();
-    trailRadius = ballRadius * 0.8;
+    _initializeBallAnimation();
+    _initializeTrailPositions();
+  }
+  void _initializeBallAnimation() {
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 16),
+    );
+    _animation = Tween<double>(begin: 0, end: 1).animate(_animationController);
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    trailRadius = ballRadius * 0.8;
+  }
+  void _initializeTrailPositions() {
+
+    WidgetsBinding.instance!.addPostFrameCallback((_) {
       screenWidth = MediaQuery.of(context).size.width;
       screenHeight = MediaQuery.of(context).size.height;
       setState(() {
@@ -63,56 +82,59 @@ class _BouncingBallGameState extends State<BouncingBallGame> {
       });
     });
 
+    _animationController.addListener(updateBallPosition);
     startTimer();
   }
 
   void startTimer() {
-    Timer.periodic(Duration(milliseconds: 16), (timer) {
-      if (!isDragging) {
-        setState(() {
-          ballPositionX += dx;
-          ballPositionY += dy;
+    _animationController.repeat();
+  }
 
-          if (ballPositionX + ballRadius > screenWidth) {
-            ballPositionX = screenWidth - ballRadius;
-            dx = -dx * bounceSpeed;
-          } else if (ballPositionX - ballRadius < 0) {
-            ballPositionX = ballRadius;
-            dx = -dx * bounceSpeed;
-          }
+  void updateBallPosition() {
+    if (!isDragging) {
+      setState(() {
+        ballPositionX += dx;
+        ballPositionY += dy;
 
-          if (ballPositionY + ballRadius > screenHeight) {
-            ballPositionY = screenHeight - ballRadius;
-            dy = -dy * bounceSpeed;
-          } else if (ballPositionY - ballRadius < 0) {
-            ballPositionY = ballRadius;
-            dy = -dy * bounceSpeed;
-          }
+        if (ballPositionX + ballRadius > screenWidth) {
+          ballPositionX = screenWidth - ballRadius;
+          dx = -dx * bounceSpeed;
+        } else if (ballPositionX - ballRadius < 0) {
+          ballPositionX = ballRadius;
+          dx = -dx * bounceSpeed;
+        }
 
-          if (dx.abs() > maxSpeed) {
-            dx = dx.sign * maxSpeed;
-          }
+        if (ballPositionY + ballRadius > screenHeight) {
+          ballPositionY = screenHeight - ballRadius;
+          dy = -dy * bounceSpeed;
+        } else if (ballPositionY - ballRadius < 0) {
+          ballPositionY = ballRadius;
+          dy = -dy * bounceSpeed;
+        }
 
-          if (dy.abs() > maxSpeed) {
-            dy = dy.sign * maxSpeed;
-          }
+        if (dx.abs() > maxSpeed) {
+          dx = dx.sign * maxSpeed;
+        }
 
-          if (dx.abs() < minSpeed) {
-            dx = dx.sign * minSpeed;
-          }
+        if (dy.abs() > maxSpeed) {
+          dy = dy.sign * maxSpeed;
+        }
 
-          if (dy.abs() < minSpeed) {
-            dy = dy.sign * minSpeed;
-          }
+        if (dx.abs() < minSpeed) {
+          dx = dx.sign * minSpeed;
+        }
 
-          trailPositions.add(Offset(ballPositionX, ballPositionY));
+        if (dy.abs() < minSpeed) {
+          dy = dy.sign * minSpeed;
+        }
 
-          if (trailPositions.length > 20) {
-            trailPositions.removeAt(0);
-          }
-        });
-      }
-    });
+        trailPositions.add(Offset(ballPositionX, ballPositionY));
+
+        if (trailPositions.length > 20) {
+          trailPositions.removeAt(0);
+        }
+      });
+    }
   }
 
   void updateBallSpeedOnDrag(DragUpdateDetails details) {
@@ -219,7 +241,7 @@ class _BouncingBallGameState extends State<BouncingBallGame> {
           ],
         ),
         body: CustomPaint(
-          painter: BallPainter(
+          painter: BallPainter( // BallPainter를 생성하고 painter 속성에 할당
             ballPositionX: ballPositionX,
             ballPositionY: ballPositionY,
             ballRadius: ballRadius,
@@ -232,37 +254,3 @@ class _BouncingBallGameState extends State<BouncingBallGame> {
   }
 }
 
-class BallPainter extends CustomPainter {
-  double ballPositionX;
-  double ballPositionY;
-  double ballRadius;
-  double trailRadius;
-  List<Offset> trailPositions;
-
-  BallPainter({
-    required this.ballPositionX,
-    required this.ballPositionY,
-    required this.ballRadius,
-    required this.trailPositions,
-    required this.trailRadius,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final ballPaint = Paint()..color = Colors.blue;
-    final trailPaint = Paint()..color = Colors.grey;
-
-    canvas.drawCircle(Offset(ballPositionX, ballPositionY), ballRadius, ballPaint);
-
-    for (var i = 0; i < trailPositions.length; i++) {
-      double opacity = 1.0 - (i / trailPositions.length);
-      trailPaint.color = trailPaint.color.withOpacity(opacity);
-      canvas.drawCircle(trailPositions[i], trailRadius, trailPaint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return true;
-  }
-}
