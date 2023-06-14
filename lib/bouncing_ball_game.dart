@@ -7,12 +7,12 @@ class BouncingBallGame extends StatefulWidget {
   const BouncingBallGame({Key? key}) : super(key: key);
 
   @override
-  _BouncingBallGameState createState() => _BouncingBallGameState();
+  BouncingBallGameState createState() => BouncingBallGameState();
 }
 
-class _BouncingBallGameState extends State<BouncingBallGame> with SingleTickerProviderStateMixin {
+class BouncingBallGameState extends State<BouncingBallGame> with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
-  late Animation<double> _animation;
+  late Animation<double> animation;
 
   double ballPositionX = 10;
   double ballPositionY = 10;
@@ -51,7 +51,7 @@ class _BouncingBallGameState extends State<BouncingBallGame> with SingleTickerPr
       vsync: this,
       duration: const Duration(milliseconds: 16),
     );
-    _animation = Tween<double>(begin: 0, end: 1).animate(_animationController);
+    animation = Tween<double>(begin: 0, end: 1).animate(_animationController);
 
     trailRadius = ballRadius * 0.8;
   }
