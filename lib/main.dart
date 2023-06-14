@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
-import 'dart:ui';
 import 'ball_painter.dart';
 
 
 void main() {
-  runApp(BouncingBallApp());
+  runApp(const BouncingBallApp());
 }
 
 class BouncingBallApp extends StatelessWidget {
+  const BouncingBallApp({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -73,7 +74,7 @@ class _BouncingBallGameState extends State<BouncingBallGame> with SingleTickerPr
   }
   void _initializeTrailPositions() {
 
-    WidgetsBinding.instance!.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       screenWidth = MediaQuery.of(context).size.width;
       screenHeight = MediaQuery.of(context).size.height;
       setState(() {
@@ -171,7 +172,7 @@ class _BouncingBallGameState extends State<BouncingBallGame> with SingleTickerPr
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
             return AlertDialog(
-              title: Text('Options'),
+              title: const Text('Options'),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -203,7 +204,7 @@ class _BouncingBallGameState extends State<BouncingBallGame> with SingleTickerPr
               ),
               actions: [
                 TextButton(
-                  child: Text('Close'),
+                  child: const Text('Close'),
                   onPressed: () {
                     Navigator.of(context).pop();
                   },
@@ -230,10 +231,10 @@ class _BouncingBallGameState extends State<BouncingBallGame> with SingleTickerPr
       onPanEnd: onPanEnd,
       child: Scaffold(
         appBar: AppBar(
-          title: Text('Bouncing Ball Game'),
+          title: const Text('Bouncing Ball Game'),
           actions: [
             IconButton(
-              icon: Icon(Icons.settings),
+              icon: const Icon(Icons.settings),
               onPressed: () {
                 showOptionsDialog(context);
               },
