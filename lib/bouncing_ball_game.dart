@@ -11,7 +11,7 @@ class BouncingBallGame extends StatefulWidget {
 }
 
 class BouncingBallGameState extends State<BouncingBallGame> with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
+  late AnimationController animationController;
   late Animation<double> animation;
 
   double ballPositionX = 10;
@@ -43,19 +43,19 @@ class BouncingBallGameState extends State<BouncingBallGame> with SingleTickerPro
   @override
   void initState() {
     super.initState();
-    _initializeBallAnimation();
-    _initializeTrailPositions();
+    initializeBallAnimation();
+    initializeTrailPositions();
   }
-  void _initializeBallAnimation() {
-    _animationController = AnimationController(
+  void initializeBallAnimation() {
+    animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 16),
     );
-    animation = Tween<double>(begin: 0, end: 1).animate(_animationController);
+    animation = Tween<double>(begin: 0, end: 1).animate(animationController);
 
     trailRadius = ballRadius * 0.8;
   }
-  void _initializeTrailPositions() {
+  void initializeTrailPositions() {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       screenWidth = MediaQuery.of(context).size.width;
@@ -66,12 +66,12 @@ class BouncingBallGameState extends State<BouncingBallGame> with SingleTickerPro
       });
     });
 
-    _animationController.addListener(updateBallPosition);
+    animationController.addListener(updateBallPosition);
     startTimer();
   }
 
   void startTimer() {
-    _animationController.repeat();
+    animationController.repeat();
   }
 
   void updateBallPosition() {
