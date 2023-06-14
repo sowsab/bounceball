@@ -17,12 +17,14 @@ class BouncingBallApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: BouncingBallGame(),
+      home: const BouncingBallGame(),
     );
   }
 }
 
 class BouncingBallGame extends StatefulWidget {
+  const BouncingBallGame({Key? key}) : super(key: key);
+
   @override
   _BouncingBallGameState createState() => _BouncingBallGameState();
 }
